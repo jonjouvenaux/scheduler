@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Jon's Daily Post Scheduler</title>
+<style>
+  :root {
+    --bg:#0f1117;--card:#1a1d27;--card2:#22263a;
+    --accent:#4f7df3;--accent2:#7c5cbf;
+    --gold:#f5b942;--green:#3ecf8e;--red:#e05c5c;
+    --text:#f0f2ff;--muted:#6b7280;--border:#2d3148;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;min-height:100vh;padding-bottom:40px;}
+  header{background:linear-gradient(135deg,#1a1d27,#22263a);border-bottom:1px solid var(--border);padding:14px 16px 10px;position:sticky;top:0;z-index:100;}
+  .header-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:3px;}
+  .app-title{font-size:16px;font-weight:800;}
+  .streak{display:flex;align-items:center;gap:4px;background:linear-gradient(135deg,#f5b942,#e8961a);color:#1a1000;font-size:12px;font-weight:800;padding:4px 10px;border-radius:20px;}
+  .hdate{font-size:12px;color:var(--muted);}
+  .stats{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;padding:14px 14px 0;}
+  .stat{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:12px 8px;text-align:center;}
+  .sv{font-size:20px;font-weight:800;color:var(--accent);line-height:1;margin-bottom:3px;}
+  .sl{font-size:10px;color:var(--muted);font-weight:600;}
+  .tsec{padding:14px 14px 0;}
+  .tcard{background:linear-gradient(135deg,#1e2540,#252a42);border:1px solid var(--border);border-radius:16px;padding:18px;position:relative;overflow:hidden;}
+  .tcard::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,var(--accent),var(--accent2));}
+  .tlabel{font-size:10px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;color:var(--accent);margin-bottom:6px;}
+  .htag{display:inline-flex;align-items:center;gap:4px;background:#7c5cbf22;border:1px solid #7c5cbf44;color:var(--gold);font-size:11px;font-weight:700;padding:3px 9px;border-radius:20px;margin-bottom:6px;}
+  .tfile{font-size:24px;font-weight:900;letter-spacing:-0.5px;margin-bottom:3px;}
+  .tmeta{font-size:12px;color:var(--muted);margin-bottom:16px;line-height:1.4;}
+  .pbtn{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:15px;background:linear-gradient(135deg,var(--accent),var(--accent2));color:white;font-size:15px;font-weight:800;border:none;border-radius:12px;cursor:pointer;transition:all 0.12s;}
+  .pbtn:active{transform:scale(0.97);}
+  .pbtn.posted{background:linear-gradient(135deg,#1a2a1a,#1e2e1e);border:1px solid var(--green);color:var(--green);}
+  .pstamp{display:flex;align-items:center;justify-content:center;gap:5px;color:var(--green);font-size:12px;font-weight:700;margin-top:9px;}
+  .vtog{display:flex;gap:6px;padding:14px 14px 0;}
+  .vt{flex:1;padding:9px 4px;background:var(--card);border:1px solid var(--border);border-radius:8px;color:var(--muted);font-size:11px;font-weight:700;cursor:pointer;text-align:center;transition:all 0.12s;}
+  .vt.active{background:var(--accent);border-color:var(--accent);color:white;}
+  .sec{padding:14px 14px 0;}
+  .sec-title{font-size:11px;font-weight:700;letter-spacing:0.8px;text-transform:uppercase;color:var(--muted);margin-bottom:10px;}
+  .lst{display:flex;flex-direction:column;gap:7px;}
+  .li{background:var(--card);border:1px solid var(--border);border-radius:11px;padding:12px 13px;display:flex;align-items:center;gap:10px;cursor:pointer;transition:all 0.12s;}
+  .li:active{background:var(--card2);}
+  .li.dim{opacity:0.4;}
+  .li.hd{border-color:#7c5cbf44;background:linear-gradient(135deg,#1e1d2f,#201e33);}
+  .ll{font-size:10px;font-weight:800;color:var(--muted);width:32px;text-align:center;flex-shrink:0;}
+  .ld{font-size:12px;font-weight:700;color:var(--muted);width:68px;flex-shrink:0;}
+  .lf{flex:1;font-size:14px;font-weight:800;}
+  .lhtag{font-size:9px;background:#7c5cbf22;color:var(--gold);border:1px solid #7c5cbf44;padding:2px 6px;border-radius:8px;white-space:nowrap;flex-shrink:0;}
+  .chk{color:var(--green);font-size:15px;flex-shrink:0;}
+  .dbx{color:#0061ff;font-size:15px;flex-shrink:0;}
+  .ctrls{display:flex;gap:7px;padding:14px 14px 0;}
+  .ctrl{flex:1;padding:10px 6px;background:var(--card);border:1px solid var(--border);border-radius:9px;color:var(--muted);font-size:11px;font-weight:700;cursor:pointer;}
+  .ctrl.danger{color:var(--red);border-color:#e05c5c22;}
+  .ctrl:active{background:var(--card2);}
+  .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(120px);background:var(--green);color:#001a0d;font-size:13px;font-weight:800;padding:11px 22px;border-radius:30px;transition:transform 0.3s cubic-bezier(.34,1.56,.64,1);z-index:999;white-space:nowrap;box-shadow:0 8px 30px rgba(62,207,142,.35);}
+  .toast.show{transform:translateX(-50%) translateY(0);}
+  .ov{display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:200;align-items:flex-end;justify-content:center;}
+  .ov.open{display:flex;}
+  .mod{background:var(--card);border-radius:20px 20px 0 0;padding:22px 18px 36px;width:100%;max-width:480px;border-top:1px solid var(--border);}
+  .mod h3{font-size:16px;font-weight:800;margin-bottom:14px;}
+  .mod input{width:100%;padding:11px 13px;background:var(--bg);border:1px solid var(--border);border-radius:10px;color:var(--text);font-size:15px;margin-bottom:12px;}
+  .mbns{display:flex;gap:8px;}
+  .mbns button{flex:1;padding:13px;border-radius:10px;border:none;font-size:14px;font-weight:800;cursor:pointer;}
+  .mc{background:var(--card2);color:var(--muted);}
+  .mo{background:var(--accent);color:white;}
+  .empty{color:var(--muted);font-size:13px;text-align:center;padding:24px;}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-top">
+    <div class="app-title">📅 Daily Post Scheduler</div>
+    <div class="streak">🔥 <span id="sc">0</span>d streak</div>
+  </div>
+  <div class="hdate" id="hd">Loading...</div>
+</header>
+
+<div class="stats">
+  <div class="stat"><div class="sv" id="sP">0</div><div class="sl">Posted</div></div>
+  <div class="stat"><div class="sv" id="sL">804</div><div class="sl">Remaining</div></div>
+  <div class="stat"><div class="sv" id="sN">1</div><div class="sl">Today's #</div></div>
+</div>
+
+<div class="tsec">
+  <div class="tcard">
+    <div id="hbdg" style="display:none"><div class="htag">🎉 <span id="hn"></span></div></div>
+    <div class="tlabel">TODAY'S POST</div>
+    <div class="tfile" id="tf">Loading...</div>
+    <div class="tmeta" id="tm">Loading...</div>
+    <button id="tb" class="pbtn" onclick="doToday()">
+      <span>📂</span><span>Open in Dropbox &amp; Mark Posted</span>
+    </button>
+    <div class="pstamp" id="ts" style="display:none">✅ Posted today — Blessings!</div>
+  </div>
+</div>
+
+<div class="vtog">
+  <div class="vt active" id="vUp" onclick="sv('up')">Upcoming</div>
+  <div class="vt" id="vHi" onclick="sv('hi')">History</div>
+  <div class="vt" id="vHo" onclick="sv('ho')">Holidays</div>
+</div>
+
+<div class="sec">
+  <div class="sec-title" id="stitle">Next 30 Days</div>
+  <div class="lst" id="list"></div>
+</div>
+
+<div class="ctrls">
+  <button class="ctrl" onclick="openM()">🗓 Jump to Date</button>
+  <button class="ctrl" onclick="expLog()">📤 Export Log</button>
+  <button class="ctrl danger" onclick="rstLog()">↺ Reset</button>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<div class="ov" id="ov">
+  <div class="mod">
+    <h3>Jump to Date</h3>
+    <input type="date" id="di">
+    <div class="mbns">
+      <button class="mc" onclick="closeM()">Cancel</button>
+      <button class="mo" onclick="jump()">Open in Dropbox</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const S=new Date('2026-05-08T00:00:00'),T=804;
+const DB='https://www.dropbox.com/home/Daily%20Posts/Daily%20Post%20Graphics';
+const DH='https://www.dropbox.com/home/Daily%20Posts/Daily%20Post%20Graphics/Holiday';
+const HOLS=[
+  {n:"Valentine's Day",m:2,d:14,f:['Valentines-01.png','Valentines-02.png','Valentines-03.png','Valentines-04.png','Valentines-05.png']},
+  {n:"Mother's Day",m:5,d:'2sun',f:["Mothers Day-01.png","Mothers Day-02.png","Mothers Day-03.png","mothers day-04.png","Mothers day-05.png","Mothers day-06.png"]},
+  {n:"Memorial Day",m:5,d:'lmon',f:['Memorial Day-01.png','Memorial Day-02.png','Memorial day-03.png']},
+  {n:"Father's Day",m:6,d:'3sun',f:["Fathers Day-01.png","Fathers Day-02.png","Fathers Day-03.png"]},
+  {n:"Veterans Day",m:11,d:11,f:['Veterans Day-01.png','Veterans Day-03.png']},
+  {n:"Thanksgiving",m:11,d:'4thu',f:['Thanksgiving-01.png','Thanksgiving-02.png','thanksgiving-04.png']},
+  {n:"Christmas",m:12,d:25,f:['Christmas-01.png']}
+];
+let log={};try{log=JSON.parse(localStorage.getItem('jPL')||'{}');}catch(e){}
+let view='up';
+function dk(d){return d.toISOString().slice(0,10);}
+function tod(){const d=new Date();return new Date(d.getFullYear(),d.getMonth(),d.getDate());}
+function aD(d,n){const r=new Date(d);r.setDate(r.getDate()+n);return r;}
+function df(a,b){return Math.round((b-a)/86400000);}
+function nwd(yr,mo,wd,n){
+  if(n>0){let d=new Date(yr,mo-1,1),c=0;while(1){if(d.getDay()===wd){c++;if(c===n)return d;}d.setDate(d.getDate()+1);}}
+  else{let d=new Date(yr,mo,0);while(d.getDay()!==wd)d.setDate(d.getDate()-1);return d;}
+}
+function hd(h,yr){
+  if(typeof h.d==='number')return new Date(yr,h.m-1,h.d);
+  if(h.d==='2sun')return nwd(yr,h.m,0,2);
+  if(h.d==='lmon')return nwd(yr,h.m,1,-1);
+  if(h.d==='3sun')return nwd(yr,h.m,0,3);
+  if(h.d==='4thu')return nwd(yr,h.m,4,4);
+}
+function hf(h,yr){
+  if(h.f.length===1)return h.f[0];
+  const ik='hi_'+h.n,yk='hy_'+h.n;
+  let idx=parseInt(localStorage.getItem(ik)||'-1');
+  const ly=parseInt(localStorage.getItem(yk)||'0');
+  if(ly!==yr){idx=(idx+1)%h.f.length;localStorage.setItem(ik,idx);localStorage.setItem(yk,yr);}
+  return h.f[Math.max(0,idx)];
+}
+function pf(date){
+  const k=dk(date);
+  if(log[k]){const p=log[k];return{file:p.file,isH:!!p.isH,hn:p.hn||null,url:p.isH?DH+'/'+encodeURIComponent(p.file):DB+'/'+encodeURIComponent(p.file)};}
+  for(const h of HOLS){const hdt=hd(h,date.getFullYear());if(dk(hdt)===k){const f=hf(h,date.getFullYear());return{file:f,isH:true,hn:h.n,url:DH+'/'+encodeURIComponent(f)};}}
+  const off=df(S,date),num=((off%T)+T)%T+1,file=num+'.png';
+  return{file,isH:false,hn:null,url:DB+'/'+encodeURIComponent(file)};
+}
+function stk(){let s=0,d=tod();while(1){const k=dk(d);if(log[k]&&log[k].posted){s++;d=aD(d,-1);}else break;}return s;}
+function mark(date,info){
+  const k=dk(date);
+  log[k]={file:info.file,posted:true,isH:info.isH,hn:info.hn,ts:Date.now()};
+  try{localStorage.setItem('jPL',JSON.stringify(log));}catch(e){}
+}
+function doToday(){
+  const d=tod(),info=pf(d);
+  mark(d,info);window.open(info.url,'_blank');renderAll();showT('✅ Logged & opening Dropbox — Blessings!');
+}
+function doItem(e,k){
+  e.stopPropagation();
+  const d=new Date(k+'T00:00:00'),info=pf(d);
+  mark(d,info);window.open(info.url,'_blank');renderAll();showT('✅ Logged!');
+}
+function renderAll(){
+  const d=tod(),k=dk(d),info=pf(d),isP=!!(log[k]&&log[k].posted),dn=df(S,d)+1;
+  document.getElementById('hd').textContent=d.toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric',year:'numeric'});
+  document.getElementById('sc').textContent=stk();
+  const tp=Object.values(log).filter(v=>v.posted).length;
+  document.getElementById('sP').textContent=tp;
+  document.getElementById('sL').textContent=T-tp;
+  document.getElementById('sN').textContent=dn;
+  const bg=document.getElementById('hbdg');bg.style.display=info.isH?'block':'none';
+  if(info.isH)document.getElementById('hn').textContent=info.hn;
+  document.getElementById('tf').textContent=info.file;
+  document.getElementById('tm').textContent=info.isH?'Holiday post · Daily Posts / Daily Post Graphics / Holiday':'Post #'+dn+' of 804 cycle · Daily Posts / Daily Post Graphics';
+  const btn=document.getElementById('tb'),st=document.getElementById('ts');
+  if(isP){btn.className='pbtn posted';btn.innerHTML='<span>✅</span><span>Already Posted — Tap to Reopen</span>';btn.onclick=()=>window.open(info.url,'_blank');st.style.display='flex';}
+  else{btn.className='pbtn';btn.innerHTML='<span>📂</span><span>Open in Dropbox &amp; Mark Posted</span>';btn.onclick=doToday;st.style.display='none';}
+  renderList();
+}
+function fd(d){return d.toLocaleDateString('en-US',{month:'short',day:'numeric'});}
+function fs(d){return['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][d.getDay()]+' '+fd(d);}
+function renderList(){
+  const lst=document.getElementById('list');lst.innerHTML='';
+  const st=document.getElementById('stitle');
+  if(view==='up'){
+    st.textContent='Next 30 Days';const d=tod();
+    for(let i=1;i<=30;i++)mkI(lst,aD(d,i),i);
+  }else if(view==='hi'){
+    st.textContent='Post History';const d=tod(),items=[];
+    for(let i=1;i<=120;i++){const dt=aD(d,-i),k=dk(dt);if(log[k]&&log[k].posted)items.push({date:dt,off:-i});}
+    if(!items.length){lst.innerHTML='<div class="empty">No posts logged yet.<br>Tap today\'s button to start!</div>';return;}
+    items.forEach(({date,off})=>mkI(lst,date,off));
+  }else{
+    st.textContent='Upcoming Holidays';const d=tod(),all=[];
+    for(let y=d.getFullYear();y<=d.getFullYear()+2;y++){for(const h of HOLS){const hdt=hd(h,y);if(hdt>=d)all.push(hdt);}}
+    all.sort((a,b)=>a-b);all.slice(0,20).forEach(dt=>mkI(lst,dt,df(tod(),dt)));
+  }
+}
+function mkI(lst,date,off){
+  const k=dk(date),info=pf(date),isP=!!(log[k]&&log[k].posted);
+  const el=document.createElement('div');
+  el.className='li'+(isP?' dim':'')+(info.isH?' hd':'');
+  const lbl=off===0?'Now':off>0?'+'+off+'d':off+'d';
+  el.innerHTML=`<div class="ll" style="color:${off===0?'var(--accent)':'var(--muted)'}">${lbl}</div><div class="ld">${fs(date)}</div><div class="lf">${info.file}</div>${info.isH?`<div class="lhtag">🎉 ${info.hn}</div>`:''}<div class="${isP?'chk':'dbx'}">${isP?'✅':'📂'}</div>`;
+  el.onclick=isP?()=>window.open(info.url,'_blank'):(e)=>doItem(e,k);
+  lst.appendChild(el);
+}
+function sv(v){
+  view=v;
+  document.getElementById('vUp').className='vt'+(v==='up'?' active':'');
+  document.getElementById('vHi').className='vt'+(v==='hi'?' active':'');
+  document.getElementById('vHo').className='vt'+(v==='ho'?' active':'');
+  renderList();
+}
+function openM(){document.getElementById('di').value=dk(tod());document.getElementById('ov').classList.add('open');}
+function closeM(){document.getElementById('ov').classList.remove('open');}
+function jump(){
+  const v=document.getElementById('di').value;if(!v)return closeM();
+  const d=new Date(v+'T00:00:00'),info=pf(d);closeM();
+  window.open(info.url,'_blank');showT('📅 '+fd(d)+': '+info.file+(info.isH?' ('+info.hn+')':''));
+}
+function expLog(){
+  const rows=['Date,File,Holiday,Timestamp'];
+  Object.entries(log).sort().forEach(([date,v])=>rows.push([date,v.file,v.hn||'',v.ts?new Date(v.ts).toISOString():''].join(',')));
+  const blob=new Blob([rows.join('\n')],{type:'text/csv'}),url=URL.createObjectURL(blob),a=document.createElement('a');
+  a.href=url;a.download='jon-post-log-'+dk(tod())+'.csv';a.click();showT('📤 Log exported!');
+}
+function rstLog(){
+  if(confirm('Reset all post history? Cannot be undone.')){
+    log={};try{localStorage.removeItem('jPL');}catch(e){}renderAll();showT('↺ Log reset.');
+  }
+}
+let tt;
+function showT(msg){
+  const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');
+  clearTimeout(tt);tt=setTimeout(()=>t.classList.remove('show'),3000);
+}
+renderAll();
+const now=new Date(),ms=new Date(now.getFullYear(),now.getMonth(),now.getDate()+1)-now;
+setTimeout(()=>{renderAll();setInterval(renderAll,86400000);},ms);
+</script>
+</body>
+</html>
