@@ -130,6 +130,7 @@
 const S=new Date('2026-05-08T00:00:00'),T=804;
 const DB='https://www.dropbox.com/home/Daily%20Posts/Daily%20Post%20Graphics';
 const DH='https://www.dropbox.com/home/Daily%20Posts/Daily%20Post%20Graphics/Holiday';
+
 const HOLS=[
   {n:"Valentine's Day",m:2,d:14,f:['Valentines-01.png','Valentines-02.png','Valentines-03.png','Valentines-04.png','Valentines-05.png']},
   {n:"Mother's Day",m:5,d:'2sun',f:["Mothers Day-01.png","Mothers Day-02.png","Mothers Day-03.png","mothers day-04.png","Mothers day-05.png","Mothers day-06.png"]},
@@ -139,8 +140,19 @@ const HOLS=[
   {n:"Thanksgiving",m:11,d:'4thu',f:['Thanksgiving-01.png','Thanksgiving-02.png','thanksgiving-04.png']},
   {n:"Christmas",m:12,d:25,f:['Christmas-01.png']}
 ];
+
+// Convert sequential post number (1-804) to filename like "03-45.png"
+function numToFile(n) {
+  const group = Math.ceil(n / 67);
+  const item = n - (group - 1) * 67;
+  const g = String(group).padStart(2,'0');
+  const i = String(item).padStart(2,'0');
+  return g+'-'+i+'.png';
+}
+
 let log={};try{log=JSON.parse(localStorage.getItem('jPL')||'{}');}catch(e){}
 let view='up';
+
 function dk(d){return d.toISOString().slice(0,10);}
 function tod(){const d=new Date();return new Date(d.getFullYear(),d.getMonth(),d.getDate());}
 function aD(d,n){const r=new Date(d);r.setDate(r.getDate()+n);return r;}
@@ -168,7 +180,7 @@ function pf(date){
   const k=dk(date);
   if(log[k]){const p=log[k];return{file:p.file,isH:!!p.isH,hn:p.hn||null,url:p.isH?DH+'/'+encodeURIComponent(p.file):DB+'/'+encodeURIComponent(p.file)};}
   for(const h of HOLS){const hdt=hd(h,date.getFullYear());if(dk(hdt)===k){const f=hf(h,date.getFullYear());return{file:f,isH:true,hn:h.n,url:DH+'/'+encodeURIComponent(f)};}}
-  const off=df(S,date),num=((off%T)+T)%T+1,file=num+'.png';
+  const off=df(S,date),num=((off%T)+T)%T+1,file=numToFile(num);
   return{file,isH:false,hn:null,url:DB+'/'+encodeURIComponent(file)};
 }
 function stk(){let s=0,d=tod();while(1){const k=dk(d);if(log[k]&&log[k].posted){s++;d=aD(d,-1);}else break;}return s;}
